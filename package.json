@@ -1,0 +1,16 @@
+{
+  "name": "salkantay-tests",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "test:api": "playwright test --project=api",
+    "test:ui": "playwright test --project=chromium",
+    "format": "prettier --write \"frontend/src/**/*.{ts,html,css}\" \"backend/tests/e2e/**/*.ts\" playwright.config.ts"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.0",
+    "@types/node": "^20.0.0",
+    "prettier": "^3.6.0",
+    "typescript": "~5.4.5"
+  }
+}

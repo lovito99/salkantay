@@ -1,0 +1,288 @@
+<!-- Encabezado -->
+<div class="page-heading">
+  <div>
+    <div class="eyebrow">GESTIÓN</div>
+    <h1>Registros <span class="count-pill">{{ total() }}</span></h1>
+    <p class="muted">Crea, filtra y actualiza tus registros.</p>
+  </div>
+  <button class="primary" type="button" (click)="open('create')" [disabled]="busy">
+    + Nuevo registro
+  </button>
+</div>
+
+<!-- Resumen -->
+<section class="overview" aria-label="Resumen">
+  <div>
+    <span class="overview-icon" aria-hidden="true">▦</span>
+    <div>
+      <small>Total de resultados</small>
+      <strong>{{ total() }}</strong>
+    </div>
+  </div>
+  <div>
+    <span class="overview-icon" aria-hidden="true">☑</span>
+    <div>
+      <small>Seleccionados</small>
+      <strong>{{ selectionCount() }}</strong>
+    </div>
+  </div>
+  <div>
+    <span class="overview-icon" aria-hidden="true">⇆</span>
+    <div>
+      <small>Página</small>
+      <strong>{{ currentPage() }} <span>de {{ lastPage() }}</span></strong>
+    </div>
+  </div>
+</section>
+
+<!-- Mensajes -->
+@if (notice()) {
+  <p class="alert success" role="status">
+    {{ notice() }}
+    <button class="text-button" type="button" (click)="notice.set('')" aria-label="Cerrar aviso">✕</button>
+  </p>
+}
+@if (error()) {
+  <p class="alert error" role="alert">{{ error() }}</p>
+}
+
+<section class="records-panel">
+  <!-- Filtros -->
+  <form class="filters" (ngSubmit)="applyFilters()">
+    <div class="search-field">
+      <label for="q">Buscar</label>
+      <input id="q" name="q" type="search" [(ngModel)]="filters.q" placeholder="Título o descripción">
+    </div>
+    <div>
+      <label for="status">Estado</label>
+      <select id="status" name="status" [(ngModel)]="filters.status">
+        <option value="">Todos</option>
+        <option value="pending">Pendiente</option>
+        <option value="active">Activo</option>
+        <option value="archived">Archivado</option>
+      </select>
+    </div>
+    <div>
+      <label for="from">Desde</label>
+      <input id="from" name="from" type="date" [(ngModel)]="filters.from">
+    </div>
+    <div>
+      <label for="to">Hasta</label>
+      <input id="to" name="to" type="date" [(ngModel)]="filters.to">
+    </div>
+    <button class="primary clear-filter" type="submit" [disabled]="busy">Filtrar</button>
+    <button class="secondary clear-filter" type="button" (click)="resetFilters()" [disabled]="busy">
+      Limpiar
+    </button>
+  </form>
+
+  <div class="list-heading">
+    <div>
+      <strong>Listado de registros</strong>
+      <span class="muted">Marca filas para aplicar una acción masiva.</span>
+    </div>
+    @if (result()?.meta; as meta) {
+      <span class="list-count">{{ meta.from ?? 0 }}–{{ meta.to ?? 0 }} de {{ meta.total }}</span>
+    }
+  </div>
+
+  <!-- Acciones masivas -->
+  @if (selectionCount() > 0) {
+    <div class="bulk-toolbar" role="region" aria-label="Acciones masivas">
+      <strong>{{ selectionCount() }} seleccionado(s)</strong>
+
+      @if (allSelected()) {
+        <span>Todos los resultados del filtro están seleccionados.</span>
+      } @else if (pageSelected() && total() > rows().length) {
+        <button class="text-button" type="button" (click)="selectAll()">
+          Seleccionar los {{ total() }} resultados
+        </button>
+      }
+
+      <button class="text-button" type="button" (click)="clearSelection()">Quitar selección</button>
+
+      <div class="bulk-action">
+        <select name="bulkAction" aria-label="Acción masiva" [(ngModel)]="bulkAction">
+          @for (action of bulkActions; track action) {
+            <option [value]="action">{{ actionLabels[action] }}</option>
+          }
+        </select>
+        <button class="primary small" type="button" (click)="runBulk()" [disabled]="busy">
+          Aplicar
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- Tabla -->
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th class="checkbox-cell">
+            <input
+              type="checkbox"
+              aria-label="Seleccionar página"
+              [checked]="pageSelected()"
+              [indeterminate]="pagePartial()"
+              [disabled]="busy || rows().length === 0"
+              (change)="togglePage()"
+            >
+          </th>
+          <th>TÍTULO</th>
+          <th>ESTADO</th>
+          <th>CREADO</th>
+          <th class="actions-heading">ACCIONES</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (record of rows(); track record.id) {
+          <tr [class.selected-row]="isSelected(record.id)">
+            <td class="checkbox-cell">
+              <input
+                type="checkbox"
+                [attr.aria-label]="'Seleccionar ' + record.title"
+                [checked]="isSelected(record.id)"
+                [disabled]="busy"
+                (change)="toggle(record.id)"
+              >
+            </td>
+            <td data-label="Título">
+              <div class="record-title">
+                <span class="file-icon" aria-hidden="true">▤</span>
+                <div>
+                  <button class="title-button" type="button" (click)="open('view', record)">
+                    {{ record.title }}
+                  </button>
+                  <span class="record-description">{{ record.description || 'Sin descripción' }}</span>
+                </div>
+              </div>
+            </td>
+            <td data-label="Estado">
+              <span class="badge {{ record.status }}">
+                <span></span>{{ statusLabels[record.status] }}
+              </span>
+            </td>
+            <td class="date-cell" data-label="Creado">
+              {{ record.createdAt | date: 'dd/MM/yyyy' }}
+              <small>{{ record.createdAt | date: 'HH:mm' }}</small>
+            </td>
+            <td data-label="Acciones">
+              <div class="row-actions">
+                <button class="text-button" type="button" (click)="open('edit', record)" [disabled]="busy">
+                  Editar
+                </button>
+                <button class="text-button danger" type="button" (click)="remove(record)" [disabled]="busy">
+                  Eliminar
+                </button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    @if (loading()) {
+      <div class="empty-state">
+        <div class="spinner"></div>
+        Cargando registros…
+      </div>
+    } @else if (rows().length === 0) {
+      <div class="empty-state">
+        <span class="empty-icon" aria-hidden="true">▢</span>
+        <strong>No hay registros</strong>
+        Prueba con otros filtros o crea un registro nuevo.
+      </div>
+    }
+  </div>
+
+  <!-- Paginación -->
+  @if (result()?.meta; as meta) {
+    <nav class="pagination" aria-label="Paginación">
+      <div>
+        <label for="perPage">Por página</label>
+        <select id="perPage" name="perPage" [(ngModel)]="perPage" (ngModelChange)="changePerPage()">
+          <option [ngValue]="10">10</option>
+          <option [ngValue]="25">25</option>
+          <option [ngValue]="50">50</option>
+        </select>
+      </div>
+      <div>
+        <button
+          class="secondary small"
+          type="button"
+          (click)="changePage(meta.page - 1)"
+          [disabled]="busy || meta.page <= 1"
+        >
+          Anterior
+        </button>
+        <span class="page-number">{{ meta.page }}</span>
+        <button
+          class="secondary small"
+          type="button"
+          (click)="changePage(meta.page + 1)"
+          [disabled]="busy || meta.page >= meta.lastPage"
+        >
+          Siguiente
+        </button>
+      </div>
+    </nav>
+  }
+</section>
+
+<!-- Modal: crear, editar y ver -->
+<dialog #editor (cancel)="onCancel($event)" aria-labelledby="editorTitle">
+  <form (ngSubmit)="save()" #recordForm="ngForm">
+    <div class="modal-heading">
+      <h2 id="editorTitle">
+        @switch (mode) {
+          @case ('create') { Nuevo registro }
+          @case ('edit') { Editar registro }
+          @default { Detalle del registro }
+        }
+      </h2>
+      <button class="text-button" type="button" (click)="close()" aria-label="Cerrar">×</button>
+    </div>
+
+    <label for="title">Título</label>
+    <input
+      id="title"
+      name="title"
+      [(ngModel)]="input.title"
+      required
+      maxlength="255"
+      [readonly]="mode === 'view'"
+    >
+
+    <label for="description">Descripción</label>
+    <textarea
+      id="description"
+      name="description"
+      [(ngModel)]="input.description"
+      maxlength="10000"
+      [readonly]="mode === 'view'"
+    ></textarea>
+
+    <label for="recordStatus">Estado</label>
+    <select id="recordStatus" name="status" [(ngModel)]="input.status" [disabled]="mode === 'view'">
+      <option value="pending">Pendiente</option>
+      <option value="active">Activo</option>
+      <option value="archived">Archivado</option>
+    </select>
+
+    @if (formError()) {
+      <p class="alert error" role="alert">{{ formError() }}</p>
+    }
+
+    <div class="modal-footer">
+      <button class="secondary" type="button" (click)="close()" [disabled]="saving()">
+        {{ mode === 'view' ? 'Cerrar' : 'Cancelar' }}
+      </button>
+      @if (mode !== 'view') {
+        <button class="primary" type="submit" [disabled]="recordForm.invalid || saving()">
+          {{ saving() ? 'Guardando…' : 'Guardar' }}
+        </button>
+      }
+    </div>
+  </form>
+</dialog>

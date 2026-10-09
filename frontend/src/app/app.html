@@ -1,0 +1,48 @@
+<div class="workspace">
+  @if (auth.user(); as user) {
+    <aside class="sidebar">
+      <a class="brand" routerLink="/records">
+        <span class="mountain" aria-hidden="true">△</span>
+        <span>Salkantay<small>GESTIÓN DE REGISTROS</small></span>
+      </a>
+
+      <div class="nav-label">GENERAL</div>
+      <nav aria-label="Navegación principal">
+        <a routerLink="/records" routerLinkActive="active">
+          <span aria-hidden="true">▦</span> Registros
+        </a>
+        <a routerLink="/profile" routerLinkActive="active">
+          <span aria-hidden="true">◎</span> Mi perfil
+        </a>
+      </nav>
+
+      <div class="sidebar-note">Espacio personal</div>
+      <div class="account">
+        <span class="avatar">{{ user.name.charAt(0).toUpperCase() }}</span>
+        <div>
+          <strong>{{ user.name }}</strong>
+          <small>{{ user.email }}</small>
+        </div>
+      </div>
+
+      <button class="logout" (click)="logout()" [disabled]="leaving()">
+        {{ leaving() ? 'Cerrando sesión…' : 'Cerrar sesión' }}
+      </button>
+      @if (logoutError()) {
+        <p class="sidebar-error" role="alert">{{ logoutError() }}</p>
+      }
+    </aside>
+  }
+
+  <main class="main" [class.guest-main]="!auth.user()">
+    @if (auth.user()) {
+      <header class="topbar">
+        <span>Espacio personal <span class="slash">/</span> Gestión</span>
+        <span class="topbar-right">Salkantay</span>
+      </header>
+    }
+    <div [class.page]="auth.user() !== null">
+      <router-outlet />
+    </div>
+  </main>
+</div>

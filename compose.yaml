@@ -1,0 +1,30 @@
+name: salkantay
+
+services:
+  # Caché de Laravel: lista negra de JWT y límites de peticiones (throttle).
+  redis:
+    image: redis:7-alpine
+    env_file: ./backend/.env
+    command: ['sh', '-c', 'exec redis-server --appendonly yes --requirepass "$$REDIS_PASSWORD"']
+    ports:
+      - '127.0.0.1:6381:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD-SHELL', 'REDISCLI_AUTH="$$REDIS_PASSWORD" redis-cli ping | grep PONG']
+      interval: 5s
+      retries: 10
+
+  # API Laravel en http://localhost:8000 (usa el MySQL de XAMPP del equipo).
+  backend:
+    build: ./backend
+    user: '1000:1000'
+    network_mode: host
+    volumes:
+      - ./backend:/app
+    depends_on:
+      redis:
+        condition: service_healthy
+
+volumes:
+  redis-data:

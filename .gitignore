@@ -1,0 +1,38 @@
+# Dependencias
+node_modules/
+/backend/vendor/
+
+# Configuración local y credenciales
+.env
+.env.*
+!.env.example
+auth.json
+/frontend/public/config.json
+
+# Compilaciones y resultados de pruebas
+/frontend/dist/
+/frontend/out-tsc/
+/frontend/.angular/
+/frontend/coverage/
+/test-results/
+/playwright-report/
+/backend/.phpunit.cache/
+/backend/.phpunit.result.cache
+/backend/database/*.sqlite*
+
+# Archivos de ejecución de Laravel
+/backend/bootstrap/cache/*
+!/backend/bootstrap/cache/.gitkeep
+/backend/storage/**
+!/backend/storage/**/
+!/backend/storage/**/.gitkeep
+/backend/public/hot
+/backend/public/build/
+/backend/public/storage
+
+# Editor y sistema operativo
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.log
